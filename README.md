@@ -72,4 +72,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 [1]: http://www.figlet.org/
 [2]: https://github.com/pwaller/pyfiglet
-[3]: http://www.sublimetext.com/2
+[3]: https://www.sublimetext.com/
