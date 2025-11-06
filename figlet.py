@@ -158,18 +158,19 @@ class FigletInsertTextCommand(sublime_plugin.TextCommand):
         view.erase(edit, sel[0])
         view.insert(edit, cursor, text)
         sel.clear()
-        sel.add(sublime.Region(cursor, cursor + len(text)))
+
+        if comment_frame:
+            sel.add(sublime.Region(cursor + len(text), cursor + len(text)))
+        else:
+            sel.add(sublime.Region(cursor, cursor + len(text)))
 
     def add_comment_frame(self, text):
         settings = sublime.load_settings("Preferences.sublime-settings")
         padding = settings.get('figlet_comment_padding', 4)
-        comment_start, comment_end = self.get_comment_prefix()
+        comment_start, comment_end, no_box = self.get_comment_prefix()
 
         max_width = get_max_line_length(text)
         comment_line_char = comment_start[-1]
-        # Exception HTML
-        if comment_start == '<!--':
-            comment_line_char = '!'
         # Exception MATLAB
         if comment_start == '%':
             comment_line_char = '#'
@@ -184,18 +185,24 @@ class FigletInsertTextCommand(sublime_plugin.TextCommand):
             comment_end
         )
         result = horizontal_border + '\n'
+        if no_box:
+            result = ''
         # Content
         for line in text.split('\n'):
-            result += (
-                comment_start +
-                padding * ' ' +
-                line +
-                (max_width - len(line) + padding) * ' ' +
-                comment_end +
-                '\n'
-            )
+            if line:
+                result += (
+                    comment_start + 
+                    padding * ' ' + 
+                    line +
+                    (max_width - len(line) + padding) * ' ' +
+                    comment_end + 
+                    '\n'
+                    )
         # Last row
-        result += horizontal_border
+        if not no_box:
+            result += horizontal_border
+        else:
+            result = result[:-1]
 
         return result
 
@@ -212,6 +219,7 @@ class FigletInsertTextCommand(sublime_plugin.TextCommand):
         comment_end_2 = None
         comment_start_3 = None
         comment_end_3 = None
+        no_box = False
         for meta_info in meta_infos:
             if meta_info['name'] == 'TM_COMMENT_START':
                 comment_start = meta_info['value']
@@ -225,18 +233,13 @@ class FigletInsertTextCommand(sublime_plugin.TextCommand):
                 comment_start_2 = meta_info['value']
             if meta_info['name'] == 'TM_COMMENT_END_3':
                 comment_end_2 = meta_info['value']
-        if comment_end_2 is not None and comment_start_2 is not None:
-            comment_start = comment_start_2
-            comment_end = comment_end_2
-        if comment_end_3 is not None and comment_start_3 is not None:
-            comment_start = comment_start_3
-            comment_end = comment_end_3
         if comment_start is None:
             # When nothing is set (e.g. Plain text)
             comment_start = ';'
         if comment_end is None:
-            comment_end = comment_start[::-1]
+            comment_end = ''
+            no_box = True
         comment_start = comment_start.replace(" ", "")
         comment_end = comment_end.replace(" ", "")
 
-        return comment_start, comment_end
+        return comment_start, comment_end, no_box
